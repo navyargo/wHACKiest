@@ -88,7 +88,7 @@ export const routes: RouteDef[] = [
 
   // ------------------------------------------------------------ demo controls
   route({
-    method: "GET", path: "/demo/state", auth: "demo",
+    method: "GET", path: "/demo/state", auth: "demoSession",
     handler: async () => {
       const { db, clock } = deps();
       const row = await db.demoClock.findUnique({ where: { id: 1 } });
@@ -96,13 +96,13 @@ export const routes: RouteDef[] = [
     },
   }),
   route({
-    method: "POST", path: "/demo/clock", auth: "demo", mutate: true,
+    method: "POST", path: "/demo/clock", auth: "demoSession", mutate: true,
     body: z.union([z.object({ addMinutes: z.number().int().min(1).max(24 * 60) }), z.object({ jumpTo: D.HHMM })]),
     handler: async ({ body, user }) => setClock(user!, body),
   }),
-  route({ method: "POST", path: "/demo/reset", auth: "demo", mutate: true, handler: async () => resetDemo() }),
+  route({ method: "POST", path: "/demo/reset", auth: "demoSession", mutate: true, handler: async () => resetDemo() }),
   route({
-    method: "POST", path: "/demo/scenarios/:n", auth: "demo", mutate: true,
+    method: "POST", path: "/demo/scenarios/:n", auth: "demoSession", mutate: true,
     handler: async ({ params, user }) => runScenario(Number(params.n), user!),
   }),
 

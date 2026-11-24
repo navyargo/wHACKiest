@@ -19,7 +19,8 @@ export interface HandlerCtx<B, Q> {
 export interface RouteDef<B extends ZodTypeAny = ZodTypeAny, Q extends ZodTypeAny = ZodTypeAny> {
   method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   path: string;
-  auth: "public" | "session" | "demo";
+  /** demo = Demo Mode only, no session needed (one-click login); demoSession = Demo Mode + signed in. */
+  auth: "public" | "session" | "demo" | "demoSession";
   /** Mutations need an Idempotency-Key and are replay-safe. */
   mutate?: boolean;
   /** Re-run the care sweep after a successful mutation so alerts reflect the change immediately. */
@@ -74,9 +75,9 @@ export async function dispatch(routes: RouteDef[], req: Request, segments: strin
   const { r, params } = found;
   const { db, clock } = deps();
   try {
-    if (r.auth === "demo" && !isDemoMode()) return errorJson(404, "DEMO_ONLY", "Demo Mode is off");
+    if ((r.auth === "demo" || r.auth === "demoSession") && !isDemoMode()) return errorJson(404, "DEMO_ONLY", "Demo Mode is off");
     const user = await getSessionUser(db, cookie(req, SESSION_COOKIE));
-    if (r.auth !== "public" && !user) return errorJson(401, "UNAUTHENTICATED", "Please sign in");
+    if ((r.auth === "session" || r.auth === "demoSession") && !user) return errorJson(401, "UNAUTHENTICATED", "Please sign in");
 
     let ctx: PatientContext | null = null;
     if (params.pid) ctx = await resolvePatientContext(db, clock, { type: "USER", userId: user!.id, name: user!.name, via: "REST" }, params.pid);
