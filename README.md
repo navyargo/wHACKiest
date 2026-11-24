@@ -95,7 +95,7 @@ HTTP clients: `POST http://localhost:3000/api/mcp` with `Authorization: Bearer <
 | Pharmacy | Not integrated | Refills are recorded in CareRelay; no ordering. |
 | Document text extraction | **LIVE (local)** | PDFs with a text layer via `unpdf`; plain text. **No image OCR** — paste/type text for photos. |
 | LLM | **LIVE** if `ANTHROPIC_API_KEY` is set (default model `claude-opus-5-5`, server-side refusal fallbacks enabled), otherwise **offline rule-based provider** | Header badge shows which. The demo and all tests run on the offline provider. |
-| ElevenLabs voice | **LIVE** only if `ELEVENLABS_API_KEY` is set | "Listen to handover" and voice escalation alerts; audio cached per version. Hidden without a key. *Not exercised by the automated tests (no key in this environment).* |
+| ElevenLabs voice | **LIVE** only if `ELEVENLABS_API_KEY` is set | "Listen to handover" and voice escalation alerts; audio cached per version. Hidden without a key. Verified live on 24 Nov (handover audio generated and played in the browser); not part of the automated tests. Free ElevenLabs plans can't use library voices via the API — set `ELEVENLABS_VOICE_ID` to a voice your account can use (e.g. `JBFqnCBsd6RMkjVDRZzb`). |
 | AWS S3 storage | Optional adapter | `STORAGE_PROVIDER=s3` + `S3_BUCKET`, `AWS_REGION`. Compiles; not exercised against a real bucket by the team. Nothing is deployed to AWS by this repo. |
 
 ## Safety boundaries (enforced in code, with tests)
@@ -156,7 +156,7 @@ AWS path (documented, not deployed by the team): App Runner or ECS Fargate for t
 - Members added via approval get an account without a usable password (no invite/reset flow).
 - The offline AI provider is regex-based and tuned to the synthetic seed documents/messages; real-world free text needs the live model.
 - "Listen to handover" reads the English summary; no translation to the patient's preferred language.
-- ElevenLabs and S3 adapters are implemented but untested against live services in this environment.
+- The S3 adapter is implemented but untested against a live bucket.
 - Single-node scheduler; no push notifications outside the app.
 
 ## Roadmap
