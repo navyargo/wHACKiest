@@ -17,9 +17,10 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   globalSetup: "./tests/e2e/globalSetup.ts",
   webServer: {
-    command: `pnpm --filter @carerelay/web exec next dev -p ${PORT}`,
+    // Production build: no on-demand compilation during tests.
+    command: `pnpm --filter @carerelay/web exec sh -c "next build && next start -p ${PORT}"`,
     url: `http://localhost:${PORT}/login`,
-    timeout: 240_000,
+    timeout: 600_000,
     reuseExistingServer: !process.env.CI,
     env: {
       DATABASE_URL: DB,
