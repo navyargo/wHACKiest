@@ -1,0 +1,13 @@
+{
+  "name": "@carerelay/demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "@carerelay/agents": "workspace:*",
+    "@carerelay/domain": "workspace:*",
+    "@prisma/client": "6.19.3"
+  }
+}

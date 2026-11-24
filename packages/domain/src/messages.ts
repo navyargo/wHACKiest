@@ -37,6 +37,8 @@ export function parseWhatsAppExport(txt: string): ParsedChatLine[] {
       }
       const year = y.length === 2 ? `20${y}` : y;
       out.push({ sentAt: { date: `${year}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`, time: `${String(hour).padStart(2, "0")}:${mi}` }, sender: sender.trim(), text: text.trim() });
+    } else if (/^\[?\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}:\d{2}/.test(line)) {
+      continue; // date-stamped system line ("Messages are end-to-end encrypted", "X joined"…)
     } else if (out.length && line.trim()) {
       out[out.length - 1].text += `\n${line.trim()}`;
     }

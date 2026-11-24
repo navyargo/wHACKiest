@@ -122,7 +122,7 @@ export function mockExtractMessage(text: string, senderName: string | undefined,
       continue;
     }
     if (/(swelling|swollen|pain|slept|sleep|appetite|ate |fever|dizzy|tired|wound looks|mood|walked|walking|discharge)/i.test(s)) {
-      out.push({ itemType: "OBSERVATION", payload: { text: s, category: /wound|swell|discharge/i.test(s) ? "wound" : /sleep|slept/i.test(s) ? "sleep" : /appetite|ate /i.test(s) ? "nutrition" : "general" }, quote: s, confidence: 0.78, whyUncertain: null });
+      out.push({ itemType: "OBSERVATION", payload: { text: s, category: /wound|swell|swoll|discharge/i.test(s) ? "wound" : /sleep|slept/i.test(s) ? "sleep" : /appetite|ate /i.test(s) ? "nutrition" : "general" }, quote: s, confidence: 0.78, whyUncertain: null });
     }
   }
   return out;
