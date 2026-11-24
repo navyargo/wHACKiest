@@ -40,7 +40,7 @@ Concurrency: optimistic locking on every mutation, Idempotency-Key replay, parti
 ## Progress So Far
 Working MVP (run it: `docker compose up -d && pnpm db:migrate && pnpm db:seed && pnpm dev`):
 - All 12 rules, task state machine (13 states), sweep + escalation, explainability drawer, approvals, documents with span highlighting + version diff, simulated inbox + WhatsApp export import, handovers, inventory projection, timeline, care circle, Care Assistant, MCP Activity, Demo Mode with 10-scenario launcher.
-- Automated tests: see the test report in the README / final report (unit, integration against Postgres incl. MCP via SDK client, Playwright E2E).
+- Automated tests (all passing on 24 Nov): 162 unit tests (state machine — every transition, all 12 rules, inventory projection, prescription diff, medical-content guard with adversarial prompts, AI output schemas), 31 integration tests against PostgreSQL (concurrency, idempotency, sweep dedupe, cross-patient isolation in REST and MCP, MCP via the official SDK client, extraction → verification, reassignment acceptance/escalation, handover), 6 Playwright end-to-end tests of the flagship scenarios.
 
 ## What's Simulated vs Live
 | | Status |

@@ -53,14 +53,12 @@ test("3. Prescription v2: diff → verifier approval → schedule updated, old v
   await expect(page.getByRole("cell", { name: "13:00" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Medicine D" })).toBeVisible();
   await page.getByRole("button", { name: "Approve & activate" }).click();
-  await expect(page.getByText(/^approved/)).toBeVisible();
+  await expect(page.getByText("Approved — instructions are active and tasks were generated")).toBeVisible();
   await expect(page.getByRole("link", { name: "v1" })).toBeVisible();
   const pid = await patientId(page);
-  const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
   const tasks = await (await page.request.get(`/api/patients/${pid}/tasks`)).json();
   const date = tasks.date as string;
   const next = await (await page.request.get(`/api/patients/${pid}/tasks?date=${addDay(date)}`)).json();
-  void tomorrow;
   expect(next.tasks.some((t: { title: string; localTime: string; state: string }) => t.title.startsWith("Medicine B") && t.localTime === "13:00" && t.state !== "CANCELLED")).toBe(true);
   expect(next.tasks.some((t: { title: string; localTime: string; state: string }) => t.title.startsWith("Medicine D"))).toBe(true);
 });

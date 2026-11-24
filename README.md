@@ -122,7 +122,9 @@ pnpm db:seed
 pnpm dev                    # http://localhost:3000
 ```
 
-Tests: `pnpm test` (unit + integration; uses `TEST_DATABASE_URL`), `pnpm test:e2e` (Playwright; starts its own server on :3100 against the test database). Also `pnpm typecheck`, `pnpm lint`.
+Tests: `pnpm test` (unit + integration; uses `TEST_DATABASE_URL`), `pnpm test:e2e` (Playwright; builds and starts its own server on :3100 against the test database). Also `pnpm typecheck`, `pnpm lint`.
+
+Last local run (24 Nov 2026): **162 unit + 31 integration tests passed (193/193)**, **6/6 Playwright E2E passed**, typecheck and lint clean. The clean-machine `docker compose` path was not run locally (no Docker on the build machine); CI runs it on GitHub.
 
 ### Demo accounts (Demo Mode only)
 
