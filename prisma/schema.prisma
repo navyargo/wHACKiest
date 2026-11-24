@@ -1,0 +1,672 @@
+// CareRelay data model. See docs/SCHEMA.md for the ER diagram.
+// Partial unique indexes and check constraints live in the SQL migration
+// (prisma/migrations/*_constraints) because Prisma cannot express them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PATIENT_OR_REPRESENTATIVE
+  CARE_COORDINATOR
+  CLINICAL_VERIFIER
+  FAMILY_CAREGIVER
+  PROFESSIONAL_CAREGIVER
+  REMOTE_VIEWER
+}
+
+enum MemberStatus {
+  ACTIVE
+  INVITED
+  REMOVED
+}
+
+enum AvailabilityType {
+  WORKING_HOURS
+  UNAVAILABLE
+  CALENDAR_BUSY
+}
+
+enum AvailabilitySource {
+  MANUAL
+  CALENDAR_SIMULATED
+  ICS_IMPORT
+}
+
+enum DocumentKind {
+  PRESCRIPTION
+  DISCHARGE_SUMMARY
+  APPOINTMENT
+  INSTRUCTION
+  OTHER
+}
+
+enum MessageChannel {
+  WHATSAPP_SIMULATED
+  SMS_SIMULATED
+  EMAIL_SIMULATED
+  IN_APP
+}
+
+enum SourceType {
+  DOCUMENT
+  MESSAGE
+  TASK_EVENT
+  ADMINISTRATION
+  HANDOVER
+  OBSERVATION
+  MANUAL
+}
+
+enum ExtractedItemType {
+  MEDICATION
+  APPOINTMENT
+  CARE_ACTIVITY
+  RESTRICTION
+  COMMITMENT
+  COMPLETION_REPORT
+  OBSERVATION
+  SCHEDULE_CHANGE
+  REPLENISHMENT_REQUEST
+  CONCERN
+}
+
+enum ExtractionStatus {
+  PROPOSED
+  AWAITING_VERIFICATION
+  APPROVED
+  REJECTED
+}
+
+enum TaskCategory {
+  MEDICATION
+  WOUND_CARE
+  PHYSIO
+  APPOINTMENT
+  MEAL
+  HYGIENE
+  MONITORING
+  ERRAND
+  OTHER
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum TaskState {
+  PROPOSED
+  AWAITING_VERIFICATION
+  UNASSIGNED
+  ASSIGNED
+  AWAITING_ACKNOWLEDGEMENT
+  ACKNOWLEDGED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CONFLICTING
+  ESCALATED
+  REASSIGNED
+  CANCELLED
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+  AGENT
+}
+
+enum AdministrationStatus {
+  RECORDED
+  DISPUTED
+}
+
+enum ConflictKind {
+  DUPLICATE_ADMINISTRATION
+  CONTRADICTORY_REPORT
+  INSTRUCTION_VERSION
+  AVAILABILITY
+  INVENTORY
+  APPOINTMENT_STATUS
+}
+
+enum ConflictState {
+  OPEN
+  RESOLVED
+}
+
+enum AlertLevel {
+  INFORMATIONAL
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum AlertState {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  ESCALATED
+}
+
+enum HandoverState {
+  DRAFT
+  SENT
+  ACKNOWLEDGED
+}
+
+enum ReplenishmentState {
+  UNASSIGNED
+  AWAITING_ACKNOWLEDGEMENT
+  ACKNOWLEDGED
+  COMPLETED
+  CANCELLED
+}
+
+enum ApprovalState {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum NotificationChannel {
+  IN_APP
+  VOICE_ELEVENLABS
+  SMS_SIMULATED
+}
+
+model User {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String
+  email             String   @unique
+  passwordHash      String
+  phone             String?
+  preferredLanguage String   @default("en")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  memberships CareCircleMember[]
+  sessions    Session[]
+  mcpTokens   McpToken[]
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Short-lived, patient-scoped bearer token for the MCP server. Only the hash is stored.
+model McpToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  patientId String?   @db.Uuid
+  tokenHash String    @unique
+  label     String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Patient {
+  id                String   @id @default(uuid()) @db.Uuid
+  displayName       String
+  fullName          String?
+  age               Int
+  conditions        String[]
+  allergies         String[]
+  mobilityNotes     String   @default("")
+  preferredLanguage String   @default("en")
+  timezone          String   @default("Asia/Kolkata")
+  emergencyContacts Json     @default("[]")
+  version           Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  members        CareCircleMember[]
+  documents      SourceDocument[]
+  messages       SourceMessage[]
+  carePlanItems  CarePlanItem[]
+  tasks          Task[]
+  conflicts      Conflict[]
+  alerts         Alert[]
+  handovers      Handover[]
+  observations   Observation[]
+  medications    Medication[]
+  approvals      ApprovalRequest[]
+  extractedItems ExtractedItem[]
+}
+
+model CareCircleMember {
+  id                   String       @id @default(uuid()) @db.Uuid
+  patientId            String       @db.Uuid
+  userId               String       @db.Uuid
+  role                 Role
+  relationship         String       @default("")
+  qualifications       String[]
+  status               MemberStatus @default(ACTIVE)
+  /// Explicit grant for a REMOTE_VIEWER to see raw messages (sensitive; via ApprovalRequest).
+  messageAccessGranted Boolean      @default(false)
+  version              Int          @default(1)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  patient      Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availability Availability[]
+
+  @@unique([patientId, userId])
+}
+
+model Availability {
+  id        String             @id @default(uuid()) @db.Uuid
+  memberId  String             @db.Uuid
+  type      AvailabilityType
+  start     DateTime
+  end       DateTime
+  source    AvailabilitySource @default(MANUAL)
+  note      String             @default("")
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  member    CareCircleMember   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, start])
+}
+
+model SourceDocument {
+  id             String       @id @default(uuid()) @db.Uuid
+  patientId      String       @db.Uuid
+  kind           DocumentKind
+  title          String
+  documentDate   DateTime
+  versionGroupId String       @db.Uuid
+  versionNumber  Int          @default(1)
+  storageKey     String?
+  mimeType       String       @default("text/plain")
+  rawText        String
+  uploadedBy     String       @db.Uuid
+  supersedesId   String?      @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  patient        Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([versionGroupId, versionNumber])
+  @@index([patientId])
+}
+
+model SourceMessage {
+  id                      String         @id @default(uuid()) @db.Uuid
+  patientId               String         @db.Uuid
+  channel                 MessageChannel
+  senderMemberId          String?        @db.Uuid
+  senderName              String         @default("")
+  sentAt                  DateTime
+  text                    String
+  authorisedForProcessing Boolean        @default(false)
+  processedAt             DateTime?
+  importBatch             String?
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  patient                 Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, sentAt])
+}
+
+model ExtractedItem {
+  id                  String            @id @default(uuid()) @db.Uuid
+  patientId           String            @db.Uuid
+  sourceType          SourceType
+  sourceId            String            @db.Uuid
+  /// {start, end} character offsets into the source text, plus optional line.
+  sourceSpan          Json
+  itemType            ExtractedItemType
+  payload             Json
+  confidence          Float
+  uncertaintyNote     String?
+  status              ExtractionStatus  @default(PROPOSED)
+  detectedBy          String
+  linkedTaskId        String?           @db.Uuid
+  verifiedBy          String?           @db.Uuid
+  verifiedAt          DateTime?
+  rejectionReason     String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  patient             Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, status])
+  @@index([sourceType, sourceId])
+}
+
+model CarePlanItem {
+  id                    String       @id @default(uuid()) @db.Uuid
+  patientId             String       @db.Uuid
+  title                 String
+  instructions          String       @default("")
+  category              TaskCategory
+  /// {"times":["08:00","20:00"]} in the patient's timezone; optional "startDate"/"endDate" (YYYY-MM-DD).
+  recurrence            Json
+  windowMinutesBefore   Int          @default(30)
+  windowMinutesAfter    Int          @default(60)
+  priority              Priority     @default(NORMAL)
+  requiredQualification String?
+  nonRepeatable         Boolean      @default(false)
+  medicationId          String?      @db.Uuid
+  defaultAssigneeId     String?      @db.Uuid
+  sourceExtractedItemId String?      @db.Uuid
+  sourceDocumentId      String?      @db.Uuid
+  active                Boolean      @default(true)
+  supersededById        String?      @db.Uuid
+  approvedBy            String       @db.Uuid
+  approvedAt            DateTime
+  version               Int          @default(1)
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  patient               Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medication            Medication?  @relation(fields: [medicationId], references: [id])
+  tasks                 Task[]
+
+  @@index([patientId, active])
+}
+
+model Task {
+  id                 String       @id @default(uuid()) @db.Uuid
+  patientId          String       @db.Uuid
+  carePlanItemId     String?      @db.Uuid
+  title              String
+  description        String       @default("")
+  category           TaskCategory
+  scheduledAt        DateTime
+  windowStart        DateTime
+  windowEnd          DateTime
+  priority           Priority     @default(NORMAL)
+  state              TaskState
+  /// State before CONFLICTING/ESCALATED, so a resolution can return to it.
+  previousState      TaskState?
+  requiredQualification String?
+  nonRepeatable      Boolean      @default(false)
+  medicationId       String?      @db.Uuid
+  assigneeMemberId   String?      @db.Uuid
+  backupMemberId     String?      @db.Uuid
+  acknowledgedAt     DateTime?
+  completedAt        DateTime?
+  completedByMemberId String?     @db.Uuid
+  completionEvidence Json?
+  escalationPolicyId String?      @db.Uuid
+  version            Int          @default(1)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  patient            Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  carePlanItem       CarePlanItem? @relation(fields: [carePlanItemId], references: [id])
+  events             TaskEvent[]
+  administrations    AdministrationRecord[]
+
+  @@unique([carePlanItemId, scheduledAt])
+  @@index([patientId, scheduledAt])
+  @@index([patientId, state])
+}
+
+/// Append-only (enforced by a trigger in the constraints migration).
+model TaskEvent {
+  id             String     @id @default(uuid()) @db.Uuid
+  taskId         String     @db.Uuid
+  type           String
+  fromState      TaskState?
+  toState        TaskState?
+  actorUserId    String?    @db.Uuid
+  actorType      ActorType
+  payload        Json       @default("{}")
+  idempotencyKey String     @unique
+  createdAt      DateTime   @default(now())
+  task           Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+}
+
+model AdministrationRecord {
+  id                 String               @id @default(uuid()) @db.Uuid
+  taskId             String               @db.Uuid
+  medicationId       String?              @db.Uuid
+  recordedByMemberId String               @db.Uuid
+  administeredAt     DateTime
+  note               String               @default("")
+  status             AdministrationStatus
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  task               Task                 @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([medicationId, administeredAt])
+}
+
+model Conflict {
+  id                    String        @id @default(uuid()) @db.Uuid
+  patientId             String        @db.Uuid
+  kind                  ConflictKind
+  title                 String
+  subjectRefs           Json
+  /// [{sourceType, sourceId, excerpt, recordedBy, timestamp}]
+  evidence              Json
+  detectedBy            String
+  clinicallySignificant Boolean       @default(false)
+  state                 ConflictState @default(OPEN)
+  dedupeKey             String
+  resolution            String?
+  resolvedBy            String?       @db.Uuid
+  resolvedAt            DateTime?
+  version               Int           @default(1)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  patient               Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, state])
+}
+
+model Alert {
+  id                String     @id @default(uuid()) @db.Uuid
+  patientId         String     @db.Uuid
+  ruleId            String
+  level             AlertLevel
+  title             String
+  explanation       String
+  basis             Json
+  evidence          Json
+  affectedTaskId    String?    @db.Uuid
+  conflictId        String?    @db.Uuid
+  resolutionOptions Json
+  responders        String[]
+  state             AlertState @default(OPEN)
+  /// Unique among non-resolved alerts (partial unique index in migration).
+  dedupeKey         String
+  escalationStep    Int        @default(0)
+  escalationPolicyId String?   @db.Uuid
+  lastEscalatedAt   DateTime?
+  acknowledgedBy    String?    @db.Uuid
+  acknowledgedAt    DateTime?
+  resolution        String?
+  resolvedBy        String?    @db.Uuid
+  resolvedAt        DateTime?
+  detectedAt        DateTime
+  version           Int        @default(1)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  patient           Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, state])
+}
+
+model EscalationPolicy {
+  id        String   @id @default(uuid()) @db.Uuid
+  patientId String   @db.Uuid
+  name      String
+  /// [{afterMinutes, notifyRoles[], memberIds[], channel}]
+  steps     Json
+  isDefault Boolean  @default(false)
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Handover {
+  id             String        @id @default(uuid()) @db.Uuid
+  patientId      String        @db.Uuid
+  fromMemberId   String        @db.Uuid
+  toMemberId     String        @db.Uuid
+  shiftStart     DateTime
+  shiftEnd       DateTime
+  snapshot       Json
+  summary        Json?
+  observations   String        @default("")
+  state          HandoverState @default(DRAFT)
+  sentAt         DateTime?
+  acknowledgedAt DateTime?
+  audioKey       String?
+  version        Int           @default(1)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, shiftEnd])
+}
+
+model Observation {
+  id         String     @id @default(uuid()) @db.Uuid
+  patientId  String     @db.Uuid
+  memberId   String     @db.Uuid
+  text       String
+  category   String     @default("general")
+  recordedAt DateTime
+  sourceType SourceType @default(MANUAL)
+  sourceId   String?    @db.Uuid
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  patient    Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, recordedAt])
+}
+
+/// Medication + inventory item combined (one stock line per medication).
+model Medication {
+  id                     String    @id @default(uuid()) @db.Uuid
+  patientId              String    @db.Uuid
+  name                   String
+  form                   String
+  /// Copied from the APPROVED instruction, never inferred.
+  unitsPerAdministration Float
+  currentStock           Float
+  stockVerifiedAt        DateTime?
+  stockVerifiedBy        String?   @db.Uuid
+  reorderThresholdDays   Int       @default(3)
+  isEstimate             Boolean   @default(false)
+  active                 Boolean   @default(true)
+  version                Int       @default(1)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  patient                Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  carePlanItems          CarePlanItem[]
+  replenishments         ReplenishmentRequest[]
+
+  @@unique([patientId, name])
+}
+
+model ReplenishmentRequest {
+  id                String             @id @default(uuid()) @db.Uuid
+  medicationId      String             @db.Uuid
+  assigneeMemberId  String?            @db.Uuid
+  state             ReplenishmentState @default(UNASSIGNED)
+  dueBy             DateTime
+  confirmedQuantity Float?
+  note              String             @default("")
+  createdBy         String             @db.Uuid
+  version           Int                @default(1)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  medication        Medication         @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+}
+
+model ApprovalRequest {
+  id                 String        @id @default(uuid()) @db.Uuid
+  patientId          String        @db.Uuid
+  actionType         String
+  title              String
+  payload            Json
+  requestedByUserId  String?       @db.Uuid
+  requestedByType    ActorType
+  requiredPermission String
+  state              ApprovalState @default(PENDING)
+  decidedBy          String?       @db.Uuid
+  decidedAt          DateTime?
+  reason             String?
+  result             Json?
+  version            Int           @default(1)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  patient            Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, state])
+}
+
+model Notification {
+  id          String              @id @default(uuid()) @db.Uuid
+  patientId   String              @db.Uuid
+  memberId    String              @db.Uuid
+  alertId     String?             @db.Uuid
+  taskId      String?             @db.Uuid
+  title       String
+  body        String              @default("")
+  channel     NotificationChannel
+  dedupeKey   String              @unique
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([memberId, readAt])
+}
+
+/// Append-only (enforced by a trigger in the constraints migration).
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  actorType ActorType
+  actorId   String?
+  actorName String   @default("")
+  action    String
+  patientId String?  @db.Uuid
+  targetRef String   @default("")
+  details   Json     @default("{}")
+  at        DateTime @default(now())
+
+  @@index([patientId, at])
+  @@index([action, at])
+}
+
+model IdempotencyRecord {
+  key        String   @id
+  userId     String   @db.Uuid
+  route      String
+  status     Int
+  response   Json
+  createdAt  DateTime @default(now())
+}
+
+/// Single row (id = 1). Only used when DEMO_MODE=true.
+model DemoClock {
+  id            Int      @id @default(1)
+  offsetMinutes Int      @default(0)
+  updatedAt     DateTime @updatedAt
+}

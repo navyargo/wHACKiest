@@ -1,0 +1,43 @@
+{
+  "name": "carerelay",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": { "node": ">=18.18" },
+  "scripts": {
+    "dev": "pnpm --filter @carerelay/web dev",
+    "build": "pnpm --filter @carerelay/web build",
+    "start": "pnpm --filter @carerelay/web start",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma migrate reset --force --skip-seed && tsx prisma/seed.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @carerelay/web typecheck",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "playwright test",
+    "mcp:stdio": "tsx packages/mcp-server/src/stdio.ts",
+    "postinstall": "prisma generate"
+  },
+  "prisma": { "seed": "tsx prisma/seed.ts" },
+  "dependencies": {
+    "@carerelay/domain": "workspace:*",
+    "@carerelay/agents": "workspace:*",
+    "@prisma/client": "6.19.3",
+    "bcryptjs": "3.0.3",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@playwright/test": "1.56.1",
+    "@types/node": "20.19.43",
+    "dotenv": "16.6.1",
+    "eslint": "9.39.1",
+    "prisma": "6.19.3",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4",
+    "vitest": "3.2.7"
+  }
+}
