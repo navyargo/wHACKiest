@@ -31,8 +31,8 @@ Format: decision — reason. Update this file whenever the code changes directio
 
 ## Integrations
 - WhatsApp/SMS, calendar and pharmacy are **SIMULATED** and badged in the UI.
-- ElevenLabs text-to-speech is wired through its REST endpoint when `ELEVENLABS_API_KEY` is set; without the key the buttons are hidden.
-- AWS: an S3 `StorageProvider` adapter exists behind `STORAGE_PROVIDER=s3`; local disk is the default. Nothing is deployed to AWS by this repo.
+- ElevenLabs text-to-speech is wired through its REST endpoint when `ELEVENLABS_API_KEY` is set; without the key the buttons are hidden. Default voice is `JBFqnCBsd6RMkjVDRZzb` because free ElevenLabs plans cannot use library voices through the API; override with `ELEVENLABS_VOICE_ID`.
+- AWS: an S3 `StorageProvider` adapter exists behind `STORAGE_PROVIDER=s3`; local disk is the default. A `Dockerfile` (runs migrations on start, seeds only when `SEED_ON_START=true`) and `docs/AWS_DEPLOY.md` (App Runner + RDS + S3 + Secrets Manager) are provided; the deployment itself is planned for hack day.
 
 ## Build & test environment
 - **Local Postgres on the build machine**: Docker and Homebrew Postgres were unavailable (outdated Xcode on an Intel Mac), so development used an npm-packaged Postgres 16 binary (`embedded-postgres`) run outside the repo. The repo's supported path remains `docker compose up -d`; CI uses a Postgres 16 service container.

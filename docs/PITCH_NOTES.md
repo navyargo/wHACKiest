@@ -48,6 +48,6 @@ Working MVP (run it: `docker compose up -d && pnpm db:migrate && pnpm db:seed &&
 | WhatsApp/SMS inbox, calendar busy blocks | SIMULATED (badged in UI) |
 | WhatsApp chat-export import, PDF text extraction | LIVE, local parsing |
 | LLM | LIVE with `ANTHROPIC_API_KEY`, otherwise offline rule-based (demo default) |
-| ElevenLabs voice (handover "Listen", voice escalation) | LIVE with key; hidden otherwise; not tested live by the team |
-| AWS S3 storage adapter | Optional, implemented; not deployed |
+| ElevenLabs voice (handover "Listen", voice escalation) | LIVE: handover audio verified end to end on 24 Nov; hidden without a key |
+| AWS (App Runner + RDS + S3) | Dockerfile and deployment guide ready; deploying on hack day |
 | Pharmacy ordering, image OCR | Not built |

@@ -43,7 +43,7 @@ flowchart LR
   SCH[Scheduler: care sweep every minute] --> SVC
 ```
 
-Details: `docs/ARCHITECTURE.md`, `docs/SCHEMA.md`, `docs/STATE_MACHINE.md`, `docs/AUTHZ.md`, `docs/API.md`, `docs/MCP_TOOLS.md`, `docs/AGENTS.md`, `docs/ACCEPTANCE_TESTS.md`, `docs/DECISIONS.md`.
+Details: `docs/ARCHITECTURE.md`, `docs/SCHEMA.md`, `docs/STATE_MACHINE.md`, `docs/AUTHZ.md`, `docs/API.md`, `docs/MCP_TOOLS.md`, `docs/AGENTS.md`, `docs/ACCEPTANCE_TESTS.md`, `docs/DECISIONS.md`, `docs/AWS_DEPLOY.md`.
 
 Repository layout: `apps/web` (Next.js UI + REST + `/api/mcp`), `packages/domain` (state machine, rules, services, authz, clock), `packages/mcp-server` (tools, resources, prompt; stdio + HTTP), `packages/agents` (agents, LLM providers, guard, extraction), `packages/demo` (synthetic seed), `prisma` (schema, migrations, seed), `tests` (unit, integration, e2e), `docs`.
 
@@ -146,7 +146,9 @@ Demo Mode adds a virtual clock (+15 min, +1 h, jump to 08:00/13:00/20:00), **Run
 
 Generic: any Node 20 host + PostgreSQL 16. Build with `pnpm build`, run `pnpm db:migrate` then `pnpm start` with `DATABASE_URL`, `APP_URL` (public URL — agents call `${APP_URL}/api/mcp`), `DEMO_MODE=false`, `SCHEDULER_ENABLED=true`. Run a single app instance (the scheduler is in-process; sweeps are idempotent and serialised per patient with an advisory lock, so a second instance is safe but redundant).
 
-AWS path (documented, not deployed by the team): App Runner or ECS Fargate for the Next.js container, RDS PostgreSQL 16 for the database, S3 for documents/audio (`STORAGE_PROVIDER=s3`), Secrets Manager for `ANTHROPIC_API_KEY` / `ELEVENLABS_API_KEY`.
+Docker: `docker build -t carerelay .` then run with the environment variables above. The container applies migrations on start and seeds demo data only when `SEED_ON_START=true`.
+
+AWS path (step-by-step in `docs/AWS_DEPLOY.md`; deployment planned for hack day): App Runner for the container, RDS PostgreSQL 16 for the database, S3 for documents/audio (`STORAGE_PROVIDER=s3`), Secrets Manager for `ANTHROPIC_API_KEY` / `ELEVENLABS_API_KEY`.
 
 ## Known limitations
 
