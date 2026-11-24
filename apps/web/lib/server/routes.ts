@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /** REST route table. Mirrors docs/API.md. Every handler calls domain services; no business logic here. */
 import { z } from "zod";
 import * as D from "@carerelay/domain";
@@ -201,7 +202,7 @@ export const routes: RouteDef[] = [
       if (c.body.fileBase64) {
         const bytes = new Uint8Array(Buffer.from(c.body.fileBase64, "base64"));
         mime = c.body.mimeType ?? "application/octet-stream";
-        storageKey = `documents/${ctx.patientId}/${crypto.randomUUID()}-${(c.body.fileName ?? "upload").replace(/[^\w.-]/g, "_")}`;
+        storageKey = `documents/${ctx.patientId}/${randomUUID()}-${(c.body.fileName ?? "upload").replace(/[^\w.-]/g, "_")}`;
         await storage().put(storageKey, bytes, mime);
         if (mime === "application/pdf") {
           const pdf = await pdfToText(bytes);

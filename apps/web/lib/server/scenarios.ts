@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 /**
  * Demo Mode: virtual clock, reset, and the scenario launcher. Scenarios set up state through the
  * real domain services and agents (via MCP), then point at the next human action. No canned screens.
@@ -82,7 +83,7 @@ async function ensureMorningDoseRecorded(patientId: string, medicine: string) {
   if (!existing) {
     const meena = await ctxAs("meena", patientId);
     if (t.assigneeMemberId !== meena.member!.id) throw new D.DomainError("GUARD_FAILED", "The morning dose isn't assigned to Meena any more — press Reset demo data first.");
-    await D.recordAdministration(meena, t.id, { note: "Given after breakfast" }, `scenario-${crypto.randomUUID()}`);
+    await D.recordAdministration(meena, t.id, { note: "Given after breakfast" }, `scenario-${randomUUID()}`);
   }
   return t;
 }

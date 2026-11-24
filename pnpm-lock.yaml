@@ -30,9 +30,15 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
     devDependencies:
+      '@carerelay/mcp-server':
+        specifier: workspace:^
+        version: link:packages/mcp-server
       '@eslint/js':
         specifier: 9.39.1
         version: 9.39.1
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.2
+        version: 1.32.2(zod@3.25.76)
       '@playwright/test':
         specifier: 1.56.1
         version: 1.56.1
