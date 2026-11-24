@@ -367,7 +367,6 @@ model CarePlanItem {
   requiredQualification String?
   nonRepeatable         Boolean      @default(false)
   medicationId          String?      @db.Uuid
-  defaultAssigneeId     String?      @db.Uuid
   sourceExtractedItemId String?      @db.Uuid
   sourceDocumentId      String?      @db.Uuid
   active                Boolean      @default(true)

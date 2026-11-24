@@ -39,6 +39,7 @@ export const TASK_EVENTS = [
   "REASSIGN",
   "REQUEST_ACCEPTANCE",
   "CANCEL",
+  "SUPERSEDE",
 ] as const;
 export type TaskEventName = (typeof TASK_EVENTS)[number];
 
@@ -84,6 +85,7 @@ const CONFLICTABLE: TaskStateName[] = [...ACTIVE_FOR_OVERDUE, "OVERDUE", "ESCALA
 const ESCALATABLE: TaskStateName[] = ["UNASSIGNED", "ASSIGNED", "AWAITING_ACKNOWLEDGEMENT", "OVERDUE", "REASSIGNED"];
 const REASSIGNABLE: TaskStateName[] = ["ASSIGNED", "AWAITING_ACKNOWLEDGEMENT", "ACKNOWLEDGED", "OVERDUE", "ESCALATED"];
 const CANCELLABLE: TaskStateName[] = TASK_STATES.filter((s) => s !== "COMPLETED" && s !== "CANCELLED");
+const SUPERSEDABLE: TaskStateName[] = ["PROPOSED", "AWAITING_VERIFICATION", "UNASSIGNED", "ASSIGNED", "AWAITING_ACKNOWLEDGEMENT", "ACKNOWLEDGED", "REASSIGNED"];
 const CONFLICT_RESOLUTION_TARGETS: TaskStateName[] = ["COMPLETED", "ACKNOWLEDGED", "UNASSIGNED", "CANCELLED"];
 
 const sys: ActorRule = { kind: "system" };
@@ -127,6 +129,7 @@ export const TRANSITIONS: Transition[] = [
   ...REASSIGNABLE.map<Transition>((from) => ({ from, event: "REASSIGN", to: "REASSIGNED", actor: perm("manage_tasks"), guards: ["qualification", "differentAssignee"], description: "Responsibility transferred; not covered until the new member accepts" })),
   { from: "REASSIGNED", event: "REQUEST_ACCEPTANCE", to: "AWAITING_ACKNOWLEDGEMENT", actor: sys, guards: [], description: "New assignee asked to accept" },
   ...CANCELLABLE.map<Transition>((from) => ({ from, event: "CANCEL", to: "CANCELLED", actor: perm("manage_tasks"), guards: ["reasonRequired"], description: "Cancelled with a reason" })),
+  ...SUPERSEDABLE.map<Transition>((from) => ({ from, event: "SUPERSEDE", to: "CANCELLED", actor: sys, guards: ["reasonRequired"], description: "Future occurrence of an instruction replaced by an approved new version" })),
 ];
 
 export const MEDICAL_CATEGORIES = new Set(["MEDICATION", "WOUND_CARE"]);
