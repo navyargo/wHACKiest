@@ -21,7 +21,8 @@
     "test:e2e": "playwright test",
     "mcp:stdio": "tsx packages/mcp-server/src/stdio.ts",
     "postinstall": "prisma generate",
-    "mcp:smoke": "tsx scripts/mcp-smoke.mts"
+    "mcp:smoke": "tsx scripts/mcp-smoke.mts",
+    "demo:rehearse": "tsx scripts/rehearse-demo.mts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
