@@ -4,7 +4,7 @@ import { storage } from "./storage";
 export async function synthesize(text: string): Promise<Uint8Array> {
   const key = process.env.ELEVENLABS_API_KEY?.trim();
   if (!key) throw new Error("ElevenLabs is not configured");
-  const voice = process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM";
+  const voice = process.env.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb";
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voice)}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: { "xi-api-key": key, "content-type": "application/json", accept: "audio/mpeg" },
