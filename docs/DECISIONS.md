@@ -33,3 +33,16 @@ Format: decision — reason. Update this file whenever the code changes directio
 - WhatsApp/SMS, calendar and pharmacy are **SIMULATED** and badged in the UI.
 - ElevenLabs text-to-speech is wired through its REST endpoint when `ELEVENLABS_API_KEY` is set; without the key the buttons are hidden.
 - AWS: an S3 `StorageProvider` adapter exists behind `STORAGE_PROVIDER=s3`; local disk is the default. Nothing is deployed to AWS by this repo.
+
+## Build & test environment
+- **Local Postgres on the build machine**: Docker and Homebrew Postgres were unavailable (outdated Xcode on an Intel Mac), so development used an npm-packaged Postgres 16 binary (`embedded-postgres`) run outside the repo. The repo's supported path remains `docker compose up -d`; CI uses a Postgres 16 service container.
+- **E2E runs its own Next.js dev server** on port 3100 against `TEST_DATABASE_URL` with `NEXT_DIST_DIR=.next-e2e`, so it never touches the dev database or a running `pnpm dev`.
+- **`NEXT_IGNORE_INCORRECT_LOCKFILE=1` and `outputFileTracingRoot`** are set so Next.js never adopts or patches a lockfile in a parent directory.
+- **Node 18 has no global `crypto`**: server code imports `randomUUID` from `node:crypto`.
+
+## API details decided during the build
+- Demo routes have two auth modes: `demo` (Demo Mode only, no session — one-click login, account list) and `demoSession` (Demo Mode + signed in — clock, reset, scenarios).
+- **Reset demo data** wipes sessions, so the endpoint signs the presenter back in as Priya.
+- Agents are run by the API on behalf of the signed-in user with a 5-minute MCP token that is revoked when the agent finishes.
+- Coverage Agent output is built from the MCP calls that actually succeeded (approval ids), never from model text.
+- The Care Assistant keeps a citation only if the cited id appears in a tool result from that conversation.

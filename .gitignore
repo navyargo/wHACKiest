@@ -9,3 +9,4 @@ playwright-report/
 *.tsbuildinfo
 .DS_Store
 coverage
+.next-e2e

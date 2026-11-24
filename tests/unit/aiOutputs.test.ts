@@ -12,7 +12,7 @@ describe("AI output schemas", () => {
     [{ items: [{ itemType: "MEDICATION", payload: {}, quote: "", confidence: 0.9 }] }, "empty quote"],
     [{ items: [{ itemType: "MEDICATION", payload: {}, quote: "x", confidence: 1.4 }] }, "confidence > 1"],
     [{ result: [] }, "wrong shape"],
-  ])("rejects %j (%s)", (v) => expect(ExtractionOutputZ.safeParse(v).success).toBe(false));
+  ])("rejects %j (%s)", (v, _why) => expect(ExtractionOutputZ.safeParse(v).success).toBe(false));
   it("payload schemas reject incomplete medication / bad times", () => {
     expect(PAYLOAD_SCHEMAS.MEDICATION.safeParse({ strength: "5 mg" }).success).toBe(false);
     expect(PAYLOAD_SCHEMAS.MEDICATION.safeParse({ name: "Medicine A", unitsPerAdministration: 1, times: ["8am"] }).success).toBe(false);

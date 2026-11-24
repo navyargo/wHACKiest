@@ -1,3 +1,4 @@
+/* global process */
 import { config } from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,8 @@ const nextConfig = {
   outputFileTracingRoot: repoRoot,
   transpilePackages: ["@carerelay/domain", "@carerelay/agents", "@carerelay/mcp-server", "@carerelay/demo"],
   serverExternalPackages: ["@prisma/client", ".prisma/client", "bcryptjs", "unpdf"],
+  // Lets E2E run its own server alongside `pnpm dev` without sharing build output.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   experimental: { externalDir: true },
   eslint: { ignoreDuringBuilds: true },
 };

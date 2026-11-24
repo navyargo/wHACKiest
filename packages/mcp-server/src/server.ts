@@ -85,7 +85,7 @@ export function createCareRelayMcpServer(auth: McpAuth, deps: McpDeps) {
     cfg: { title: string; description: string; cls: SideEffectClass; permission: string; input: I; output: O },
     handler: (args: z.objectOutputType<I, z.ZodTypeAny>) => Promise<z.objectOutputType<O, z.ZodTypeAny>>,
   ) {
-    TOOL_CATALOG.find((t) => t.name === name) || TOOL_CATALOG.push({ name, cls: cfg.cls, permission: cfg.permission, description: cfg.description });
+    if (!TOOL_CATALOG.some((t) => t.name === name)) TOOL_CATALOG.push({ name, cls: cfg.cls, permission: cfg.permission, description: cfg.description });
     server.registerTool(
       name,
       {
