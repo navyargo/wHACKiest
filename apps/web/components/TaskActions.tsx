@@ -79,8 +79,8 @@ function TextDialog({ title, label, required, onClose, onSubmit, busy }: { title
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={title}>
       <form onSubmit={(e) => (e.preventDefault(), onSubmit(text.trim()))} className="space-y-4">
-        <Field label={label}>
-          <textarea className={inputCls} rows={3} value={text} onChange={(e) => setText(e.target.value)} required={required} autoFocus />
+        <Field id="text-dialog-input" label={label}>
+          <textarea id="text-dialog-input" className={inputCls} rows={3} value={text} onChange={(e) => setText(e.target.value)} required={required} autoFocus />
         </Field>
         <div className="flex justify-end gap-2">
           <Button type="button" onClick={onClose}>Back</Button>
@@ -99,8 +99,8 @@ function AssignDialog({ task, event, onClose, onPick, busy }: { task: TaskLite; 
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={`${event === "REASSIGN" ? "Reassign" : "Assign"}: ${task.title}`} description="Ranked by qualification, busy/free and current load. The person must accept before the task counts as covered.">
       {event === "REASSIGN" && (
-        <Field label="Reason for the transfer">
-          <input className={cx(inputCls, "mb-3")} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Meena is unavailable this morning" />
+        <Field id="assign-reason" label="Reason for the transfer">
+          <input id="assign-reason" className={cx(inputCls, "mb-3")} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Meena is unavailable this morning" />
         </Field>
       )}
       <Async {...swr} retry={() => swr.mutate()} empty={(d) => (d.candidates.length ? null : <p>No caregivers in this circle.</p>)}>
@@ -155,12 +155,12 @@ function ReportDialog({ task, onClose }: { task: TaskLite; onClose: () => void }
         <fieldset className="flex gap-4">
           <legend className="mb-1 text-sm font-medium text-slate-800">Status</legend>
           {(["NOT_DONE", "DONE"] as const).map((c) => (
-            <label key={c} className="flex items-center gap-2">
-              <input type="radio" name="claim" checked={claim === c} onChange={() => setClaim(c)} /> {c === "DONE" ? "It was done" : "It has not been done"}
+            <label key={c} className="flex items-center gap-2 text-sm text-slate-800">
+              <input type="radio" name="claim" value={c} checked={claim === c} onChange={() => setClaim(c)} className="h-4 w-4 text-teal-600 focus:ring-teal-500" /> {c === "DONE" ? "It was done" : "It has not been done"}
             </label>
           ))}
         </fieldset>
-        <Field label="What did you see or hear?"><textarea className={inputCls} rows={3} required value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+        <Field id="report-note" label="What did you see or hear?"><textarea id="report-note" className={inputCls} rows={3} required value={note} onChange={(e) => setNote(e.target.value)} /></Field>
         <div className="flex justify-end gap-2"><Button type="button" onClick={onClose}>Back</Button><Button type="submit" variant="primary" loading={busy}>Record report</Button></div>
       </form>
     </Modal>
@@ -192,7 +192,7 @@ function AdministrationDialog({ task, needsDeclaration, onClose }: { task: TaskL
   if (existing) {
     return (
       <Modal open onOpenChange={(o) => !o && onClose()} title="This dose is already recorded">
-        <div role="alert" className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
+        <div role="alert" aria-live="assertive" className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
           <div className="flex gap-2 text-red-900">
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
             <div>
@@ -212,8 +212,8 @@ function AdministrationDialog({ task, needsDeclaration, onClose }: { task: TaskL
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={`Record given: ${task.title}`} description="Records that this occurrence was given, at the current time.">
       <form onSubmit={(e) => (e.preventDefault(), submit())} className="space-y-4">
-        <Field label={needsDeclaration ? "Declaration (required — you are not the assignee)" : "Note (optional)"}>
-          <textarea className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} required={needsDeclaration} />
+        <Field id="admin-note" label={needsDeclaration ? "Declaration (required — you are not the assignee)" : "Note (optional)"}>
+          <textarea id="admin-note" className={inputCls} rows={2} value={note} onChange={(e) => setNote(e.target.value)} required={needsDeclaration} />
         </Field>
         <div className="flex justify-end gap-2"><Button type="button" onClick={onClose}>Back</Button><Button type="submit" variant="primary" loading={busy}>Record</Button></div>
       </form>

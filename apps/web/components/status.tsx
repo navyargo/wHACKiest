@@ -5,19 +5,19 @@ import { cx } from "./ui";
 
 type Tone = "green" | "amber" | "red" | "violet" | "slate" | "teal";
 const TONE: Record<Tone, string> = {
-  green: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  amber: "bg-amber-50 text-amber-900 border-amber-200",
-  red: "bg-red-50 text-red-800 border-red-200",
-  violet: "bg-violet-50 text-violet-800 border-violet-200",
-  slate: "bg-slate-100 text-slate-700 border-slate-200",
-  teal: "bg-teal-50 text-teal-800 border-teal-200",
+  green: "bg-emerald-50 text-emerald-900 border-emerald-300",
+  amber: "bg-amber-50 text-amber-950 border-amber-300",
+  red: "bg-red-50 text-red-900 border-red-300",
+  violet: "bg-violet-50 text-violet-950 border-violet-300",
+  slate: "bg-slate-100 text-slate-800 border-slate-300",
+  teal: "bg-teal-50 text-teal-900 border-teal-300",
 };
 
 export function Pill({ tone, icon: Icon, children, className }: { tone: Tone; icon?: ComponentType<{ className?: string }>; children: React.ReactNode; className?: string }) {
   return (
-    <span className={cx("inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium", TONE[tone], className)}>
-      {Icon && <Icon className="h-3.5 w-3.5" aria-hidden />}
-      {children}
+    <span role="status" className={cx("inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold", TONE[tone], className)}>
+      {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+      <span>{children}</span>
     </span>
   );
 }

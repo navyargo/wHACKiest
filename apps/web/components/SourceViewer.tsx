@@ -23,7 +23,7 @@ export function SourceViewer({ source, onClose }: { source: SourceRef | null; on
                 {s ? (
                   <>
                     {d.text.slice(0, s.start)}
-                    <mark className="rounded bg-amber-200 px-0.5 text-slate-900" ref={(el) => el?.scrollIntoView({ block: "center" })}>{d.text.slice(s.start, s.end)}</mark>
+                    <mark className="rounded bg-amber-200 px-1 py-0.5 font-semibold text-slate-900 underline decoration-amber-600 decoration-2 underline-offset-2" aria-label="Highlighted source citation" ref={(el) => el?.scrollIntoView({ block: "center" })}>{d.text.slice(s.start, s.end)}</mark>
                     {d.text.slice(s.end)}
                   </>
                 ) : (

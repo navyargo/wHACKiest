@@ -2,9 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-html { font-size: 16px; }
+html { font-size: 16px; scroll-behavior: smooth; }
 body { @apply bg-slate-50 text-slate-900 antialiased; }
-:focus-visible { outline: 2px solid #0d9488; outline-offset: 2px; }
+:focus-visible { outline: 2px solid #0f766e; outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

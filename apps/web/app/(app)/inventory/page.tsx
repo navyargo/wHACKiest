@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { AlertTriangle, ClipboardCheck, PackagePlus } from "lucide-react";
 import { api, errorMessage, fetcher } from "@/lib/client/api";
 import { useSession, fmtDateTime } from "@/lib/client/session";
-import { Async, Button, Card, EmptyState, Field, Modal, PageHeader, inputCls, useToast } from "@/components/ui";
+import { Async, Button, Card, EmptyState, Field, Modal, PageHeader, inputCls, useToast, cx } from "@/components/ui";
 import { Pill } from "@/components/status";
 
 interface Repl { id: string; state: string; assigneeMemberId: string | null; assigneeName: string | null; dueBy: string; version: number; confirmedQuantity: number | null }
@@ -26,22 +26,27 @@ export default function InventoryPage() {
       <PageHeader title="Inventory" subtitle="Projections use the last verified count minus recorded administrations. CareRelay never suggests changing how much is taken. Pharmacy ordering is not integrated — record refills here." />
       <Async {...swr} retry={() => swr.mutate()} empty={(d) => (d.items.length ? null : <EmptyState title="No medications tracked yet">They appear once a prescription is approved.</EmptyState>)}>
         {(d) => (
-          <ul className="space-y-3">
+          <ul className="space-y-3" aria-label="Tracked medications list">
             {d.items.map((m) => {
               const open = m.replenishments.filter((r) => !["COMPLETED", "CANCELLED"].includes(r.state));
               return (
                 <li key={m.id}>
-                  <Card className={m.low ? "border-l-4 border-l-amber-500 p-4" : "p-4"}>
+                  <Card className={cx("p-4", m.low ? "border-l-4 border-l-amber-600 bg-amber-50/10" : "")} role="region" aria-label={`Inventory details for ${m.name}`}>
+                    {m.low && (
+                      <span role="alert" aria-live="polite" className="sr-only">
+                        {m.name} stock is low, below {m.reorderThresholdDays}-day threshold.
+                      </span>
+                    )}
                     <div className="flex flex-wrap items-start gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-lg font-semibold text-slate-900">{m.name}</p>
-                        <p className="text-sm text-slate-600">Last count: {m.currentStock} {m.form}(s){m.stockVerifiedAt ? ` on ${fmtDateTime(m.stockVerifiedAt, tz)} by ${m.stockVerifiedByName ?? "—"}` : " (never verified)"} · {m.recordedSinceVerification} given since · {m.scheduledPerDay}×/day scheduled · {m.unitsPerAdministration} per administration (from approved instruction)</p>
+                        <h2 className="text-lg font-semibold text-slate-900">{m.name}</h2>
+                        <p className="text-sm text-slate-700">Last count: {m.currentStock} {m.form}(s){m.stockVerifiedAt ? ` on ${fmtDateTime(m.stockVerifiedAt, tz)} by ${m.stockVerifiedByName ?? "—"}` : " (never verified)"} · {m.recordedSinceVerification} given since · {m.scheduledPerDay}×/day scheduled · {m.unitsPerAdministration} per administration (from approved instruction)</p>
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <span className="text-[15px] font-medium">Projected supply: {m.projection.daysRemaining === null ? "no scheduled use" : `${m.projection.daysRemaining.toFixed(1)} days`}</span>
+                          <span className="text-[15px] font-semibold text-slate-900">Projected supply: {m.projection.daysRemaining === null ? "no scheduled use" : `${m.projection.daysRemaining.toFixed(1)} days`}</span>
                           {m.projection.isEstimate && <Pill tone="amber" icon={AlertTriangle}>Estimate — needs verification</Pill>}
                           {m.low && <Pill tone="red">Below {m.reorderThresholdDays}-day threshold</Pill>}
                         </div>
-                        {m.projection.isEstimate && <p className="mt-1 text-sm text-amber-900">{m.projection.estimateReasons.join("; ")}</p>}
+                        {m.projection.isEstimate && <p className="mt-1 text-sm font-medium text-amber-950">{m.projection.estimateReasons.join("; ")}</p>}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button size="sm" disabledReason={can("record_care") ? null : "Requires record_care"} onClick={() => setCount(m)}><ClipboardCheck className="h-4 w-4" aria-hidden />Count & verify</Button>
@@ -49,9 +54,9 @@ export default function InventoryPage() {
                       </div>
                     </div>
                     {m.replenishments.length > 0 && (
-                      <ul className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                      <ul className="mt-3 space-y-2 border-t border-slate-200 pt-3" aria-label={`Refills for ${m.name}`}>
                         {m.replenishments.slice(0, 4).map((r) => (
-                          <li key={r.id} className="flex flex-wrap items-center gap-2 text-sm">
+                          <li key={r.id} className="flex min-h-[44px] flex-wrap items-center gap-2 text-sm text-slate-800">
                             <span>Refill owned by <strong>{r.assigneeName ?? "nobody"}</strong>, due {fmtDateTime(r.dueBy, tz)}</span>
                             <Pill tone={r.state === "COMPLETED" ? "green" : r.state === "ACKNOWLEDGED" ? "teal" : r.state === "CANCELLED" ? "slate" : "amber"}>{r.state.replace(/_/g, " ").toLowerCase()}{r.confirmedQuantity ? ` · ${r.confirmedQuantity} received` : ""}</Pill>
                             {r.state === "AWAITING_ACKNOWLEDGEMENT" && r.assigneeMemberId === patient.memberId && <Button size="sm" onClick={() => act(r.id, () => api("POST", path(`/replenishments/${r.id}/transition`), { event: "ACKNOWLEDGE", version: r.version }), "Accepted")}>Accept</Button>}
@@ -81,8 +86,13 @@ function CountDialog({ item, onClose }: { item: Item; onClose: () => void }) {
   return (
     <Modal open onOpenChange={(o) => !o && onClose()} title={`Count ${item.name}`} description="Record what you physically counted. This becomes the verified stock.">
       <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); setBusy(true); try { await api("POST", path(`/inventory/${item.id}/verify-stock`), { count: Number(n), version: item.version }); toast("success", "Stock verified"); onClose(); } catch (err) { toast("error", errorMessage(err)); } finally { setBusy(false); } }}>
-        <Field label={`Number of ${item.form}s counted`}><input type="number" min={0} step="0.5" required className={inputCls} value={n} onChange={(e) => setN(e.target.value)} /></Field>
-        <div className="flex justify-end gap-2"><Button type="button" onClick={onClose}>Cancel</Button><Button type="submit" variant="primary" loading={busy}>Save count</Button></div>
+        <Field label={`Number of ${item.form}s counted`} id="inventory-count-input">
+          <input id="inventory-count-input" type="number" min={0} step="0.5" required className={inputCls} value={n} onChange={(e) => setN(e.target.value)} />
+        </Field>
+        <div className="flex justify-end gap-2">
+          <Button type="button" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary" loading={busy}>Save count</Button>
+        </div>
       </form>
     </Modal>
   );

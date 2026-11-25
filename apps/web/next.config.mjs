@@ -1,4 +1,5 @@
 /* global process */
+process.env.NEXT_IGNORE_INCORRECT_LOCKFILE = "1";
 import { config } from "dotenv";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

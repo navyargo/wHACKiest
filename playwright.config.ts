@@ -3,7 +3,7 @@ import { config } from "dotenv";
 config();
 
 const PORT = 3100;
-const DB = process.env.TEST_DATABASE_URL!;
+const DB = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL || "postgresql://carerelay:carerelay@localhost:5432/carerelay_test";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -18,7 +18,9 @@ export default defineConfig({
   globalSetup: "./tests/e2e/globalSetup.ts",
   webServer: {
     // Production build: no on-demand compilation during tests.
-    command: `pnpm --filter @carerelay/web exec sh -c "next build && next start -p ${PORT}"`,
+    command: process.platform === "win32"
+      ? `pnpm --filter @carerelay/web build && pnpm --filter @carerelay/web start -p ${PORT}`
+      : `pnpm --filter @carerelay/web exec sh -c "next build && next start -p ${PORT}"`,
     url: `http://localhost:${PORT}/login`,
     timeout: 600_000,
     reuseExistingServer: !process.env.CI,

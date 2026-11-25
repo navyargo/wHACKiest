@@ -36,6 +36,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.1",
     "@carerelay/mcp-server": "workspace:^",
     "@eslint/js": "9.39.1",
     "@modelcontextprotocol/sdk": "1.32.2",

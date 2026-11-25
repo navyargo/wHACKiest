@@ -50,12 +50,23 @@ export default function MessagesPage() {
     <>
       <PageHeader title="Messages" subtitle={<span className="flex flex-wrap items-center gap-2"><SimulatedBadge what="WhatsApp / SMS inbox" /> Only messages explicitly authorised for processing are read by AI. Interpretations need confirmation.</span>} actions={can("record_care") ? <Button onClick={() => setImporting(true)}><FileUp className="h-4 w-4" aria-hidden />Import WhatsApp export</Button> : undefined} />
       {can("record_care") && (
-        <Card className="mb-5 p-4">
+        <Card className="mb-5 p-4" role="region" aria-labelledby="post-message-heading">
+          <h2 id="post-message-heading" className="sr-only">Post a simulated message</h2>
           <form className="space-y-3" onSubmit={async (e) => { e.preventDefault(); if (await act("post", () => api("POST", path("/messages"), { text, channel, authorise, extract: authorise }), authorise ? "Posted and interpreted by the Intake Agent" : "Posted (not authorised for AI processing)")) setText(""); }}>
-            <Field label={`Post to the ${patient.displayName} family group (simulated)`}><textarea className={inputCls} rows={2} required value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Ravi will take Amma to the clinic tomorrow morning" /></Field>
+            <Field label={`Post to the ${patient.displayName} family group (simulated)`} id="message-post-text">
+              <textarea id="message-post-text" className={inputCls} rows={2} required value={text} onChange={(e) => setText(e.target.value)} placeholder="e.g. Ravi will take Amma to the clinic tomorrow morning" />
+            </Field>
             <div className="flex flex-wrap items-center gap-3">
-              <select aria-label="Channel" className={cx(inputCls, "w-auto")} value={channel} onChange={(e) => setChannel(e.target.value)}><option value="WHATSAPP_SIMULATED">WhatsApp (simulated)</option><option value="SMS_SIMULATED">SMS (simulated)</option><option value="IN_APP">In-app</option></select>
-              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={authorise} onChange={(e) => setAuthorise(e.target.checked)} /> Authorise CareRelay to process this message</label>
+              <label htmlFor="message-channel-select" className="sr-only">Select messaging channel</label>
+              <select id="message-channel-select" aria-label="Messaging channel" className={cx(inputCls, "w-auto")} value={channel} onChange={(e) => setChannel(e.target.value)}>
+                <option value="WHATSAPP_SIMULATED">WhatsApp (simulated)</option>
+                <option value="SMS_SIMULATED">SMS (simulated)</option>
+                <option value="IN_APP">In-app</option>
+              </select>
+              <label htmlFor="message-authorise-check" className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                <input id="message-authorise-check" type="checkbox" checked={authorise} onChange={(e) => setAuthorise(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700" />
+                Authorise CareRelay to process this message
+              </label>
               <Button type="submit" variant="primary" loading={busy === "post"} className="ml-auto"><Send className="h-4 w-4" aria-hidden />Post</Button>
             </div>
           </form>
@@ -63,11 +74,11 @@ export default function MessagesPage() {
       )}
       <Async {...swr} retry={() => swr.mutate()} empty={(d) => (d.messages.length ? null : <EmptyState title="No messages yet" />)}>
         {(d) => (
-          <ul className="space-y-3">
+          <ul className="space-y-3" aria-label="Messages list">
             {d.messages.map((m) => (
               <li key={m.id}>
                 <Card className="p-4">
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                     <strong className="text-slate-900">{m.senderDisplay}</strong>
                     <span>{fmtDateTime(m.sentAt, tz)}</span>
                     <Pill tone="amber">{m.channel.replace("_SIMULATED", "").toLowerCase()} · simulated</Pill>
@@ -79,11 +90,11 @@ export default function MessagesPage() {
                     {m.authorisedForProcessing && m.interpretations.length === 0 && <Button size="sm" loading={busy === `ex-${m.id}`} onClick={() => act(`ex-${m.id}`, () => api("POST", path(`/messages/${m.id}/extract`)), "Interpreted by the Intake Agent via MCP")}><Sparkles className="h-4 w-4" aria-hidden />Interpret</Button>}
                   </div>
                   {m.interpretations.length > 0 && (
-                    <ul className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                    <ul className="mt-3 space-y-2 border-t border-slate-200 pt-3" aria-label={`AI interpretations for message from ${m.senderDisplay}`}>
                       {m.interpretations.map((x) => (
-                        <li key={x.id} className="flex flex-wrap items-center gap-2 text-sm">
-                          <Sparkles className="h-4 w-4 text-violet-600" aria-hidden />
-                          <span className="flex-1 text-slate-800">{describe(x)} <span className="text-slate-500">· {Math.round(x.confidence * 100)}% · {x.detectedBy}</span>{x.uncertaintyNote && <span className="block text-amber-800">Why uncertain: {x.uncertaintyNote}</span>}</span>
+                        <li key={x.id} className="flex min-h-[44px] flex-wrap items-center gap-2 text-sm">
+                          <Sparkles className="h-4 w-4 shrink-0 text-violet-700" aria-hidden />
+                          <span className="flex-1 text-slate-800">{describe(x)} <span className="text-slate-600 font-normal">· {Math.round(x.confidence * 100)}% · {x.detectedBy}</span>{x.uncertaintyNote && <span className="block font-medium text-amber-950">Why uncertain: {x.uncertaintyNote}</span>}</span>
                           <Pill tone={x.status === "APPROVED" ? "green" : "violet"}>{x.status === "APPROVED" ? "confirmed" : "awaiting confirmation"}</Pill>
                           {x.status !== "APPROVED" && (
                             <>
@@ -127,10 +138,19 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
           setBusy(false);
         }
       }}>
-        <input type="file" accept=".txt,text/plain" aria-label="Chat export file" onChange={async (e) => setFileText((await e.target.files?.[0]?.text()) ?? "")} className="block text-sm" />
-        <Field label="…or paste the export"><textarea className={inputCls} rows={6} value={fileText} onChange={(e) => setFileText(e.target.value)} placeholder="12/03/2025, 09:15 - Priya: Good morning" /></Field>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={authorise} onChange={(e) => setAuthorise(e.target.checked)} /> Everyone in this chat agreed that CareRelay may process these messages</label>
-        <div className="flex justify-end gap-2"><Button type="button" onClick={onClose}>Cancel</Button><Button type="submit" variant="primary" loading={busy} disabled={!fileText.trim()}>Import</Button></div>
+        <label htmlFor="import-file-input" className="block text-sm font-medium text-slate-800">Choose file</label>
+        <input id="import-file-input" type="file" accept=".txt,text/plain" aria-label="Chat export file" onChange={async (e) => setFileText((await e.target.files?.[0]?.text()) ?? "")} className="block text-sm text-slate-800 min-h-[44px]" />
+        <Field label="…or paste the export" id="import-paste-text">
+          <textarea id="import-paste-text" className={inputCls} rows={6} value={fileText} onChange={(e) => setFileText(e.target.value)} placeholder="12/03/2025, 09:15 - Priya: Good morning" />
+        </Field>
+        <label htmlFor="import-authorise-check" className="flex items-center gap-2 text-sm font-medium text-slate-800">
+          <input id="import-authorise-check" type="checkbox" checked={authorise} onChange={(e) => setAuthorise(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700" />
+          Everyone in this chat agreed that CareRelay may process these messages
+        </label>
+        <div className="flex justify-end gap-2">
+          <Button type="button" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="primary" loading={busy} disabled={!fileText.trim()}>Import</Button>
+        </div>
       </form>
     </Modal>
   );
